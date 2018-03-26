@@ -40,13 +40,13 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true" />
 
-    <TextView
-        android:id="@+id/alarmListTextView"
+    <Button
+        android:id="@+id/randomAlarmButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/staticHello"
-        android:layout_marginTop="207dp"
-        android:layout_toEndOf="@+id/staticHello" />
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:text="Random Alarm" />
 
 
 </RelativeLayout>

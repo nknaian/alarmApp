@@ -193,24 +193,12 @@ public class RegisterAccountActivity extends AppCompatActivity {
                 json.put("requestData", data);
                 clientMessage = json.toString();
 
-                //Connect to server and send message
-                s = new Socket();
-                s.connect(new InetSocketAddress(MainActivity.serverip, serverPort), 9020);
-                printWriter = new PrintWriter(s.getOutputStream()); //set output stream
-                printWriter.write(clientMessage); //adds data to the print writer
-                printWriter.flush(); //send data in the print writer through socket
-
-                //Read the server's message
-                BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
-                serverMessage = br.readLine();
+                //Make request to server
+                serverMessage = MainActivity.serverRequest(clientMessage);
 
                 //Extract the JSON info from the server message (don't need data, not used in this request)
                 serverJson = new JSONObject(serverMessage);
                 serverResponseType = serverJson.getString("responseType");
-
-                //Then close sockeet
-                printWriter.close();
-                s.close();
 
                 //Determine what the login result is based on the serverMessage
                 if(serverResponseType.equals("username available")) {
@@ -221,12 +209,6 @@ public class RegisterAccountActivity extends AppCompatActivity {
                     return usernameVerificationResult.ERROR;
                 }
 
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-                return usernameVerificationResult.ERROR;
-            } catch (IOException e) {
-                e.printStackTrace();
-                return usernameVerificationResult.ERROR;
             } catch (JSONException e) {
                 e.printStackTrace();
                 return usernameVerificationResult.ERROR;

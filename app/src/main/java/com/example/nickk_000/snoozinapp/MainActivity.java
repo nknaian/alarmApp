@@ -3,9 +3,11 @@ package com.example.nickk_000.snoozinapp;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -21,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -42,13 +45,11 @@ public class MainActivity extends AppCompatActivity {
     public static final String USER_EMAIL = "userEmailKey";
     public static final String USER_PASSWORD = "userPasswordKey";
     public static final String USER_USERNAME = "userUsernameKey";
-    public static final String USER_ALARM_LIST = "userAlarmListKey";
     SharedPreferences userInfoSharedPreferences;
 
     //Set up user info stuff
     public static String ThisUserEmail;
     public static String ThisUserUsername;
-    public static String ThisUserAlarmListString;
     public static String ThisUserAlarmList[];
 
     //Set up UI variables
@@ -69,8 +70,6 @@ public class MainActivity extends AppCompatActivity {
 
     //alarm list variables
     private UserAlarmListSync mAlarmSyncTask = null;
-
-    private String AlarmListString = "";
 
     enum syncType {
         SERVER_TO_CLIENT_FULL, SERVER_TO_CLIENT_ADD, CLIENT_TO_SERVER_DELETE;
@@ -128,14 +127,22 @@ public class MainActivity extends AppCompatActivity {
         mAlarmSyncTask.execute((Void) null);
 
 
-        // On click listener for random alarm
-        //randomAlarmButton.setOnClickListener(new View.OnClickListener() {
-        //    @Override
-        //    public void onClick(View v) {
+        //On click listener for random alarm
+        randomAlarmButton = (Button) findViewById(R.id.randomAlarmButton);
+        randomAlarmButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
 
-
-         //   }
-        //});
+                if(ThisUserAlarmList != null) {
+                    Uri uri = Uri.parse(pickRandomAlarm()); // missing 'http://' will cause crashed
+                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                    startActivity(intent);
+                }
+                else {
+                    //TODO: print message that your alarm list is empty
+                }
+            }
+        });
 
 
         //Set text next to "Hello" at top of activity to say the username
@@ -165,13 +172,14 @@ public class MainActivity extends AppCompatActivity {
 
             try {
 
+                //Create JSON objects and strings to use in the request
+                JSONObject clientJson = new JSONObject();
+                JSONObject clientData = new JSONObject();
+                JSONObject serverJson;
+                String serverResponseData;
+                String serverResponseType;
+
                 if(mSyncType == syncType.SERVER_TO_CLIENT_FULL) {
-                    //Create JSON objects and strings to use in the request
-                    JSONObject clientJson = new JSONObject();
-                    JSONObject clientData = new JSONObject();
-                    JSONObject serverJson;
-                    String serverResponseData;
-                    String serverResponseType;
 
                     //Create json request to send to server
                     clientJson.put("requestType", "full_alarm_sync");
@@ -179,43 +187,28 @@ public class MainActivity extends AppCompatActivity {
                     clientJson.put("requestData", clientData);
                     clientMessage = clientJson.toString();
 
-                    //Connect to server and send message
-                    s = new Socket();
-                    s.connect(new InetSocketAddress(MainActivity.serverip, serverPort), 9020);
-                    printWriter = new PrintWriter(s.getOutputStream()); //set output stream
-                    printWriter.write(clientMessage); //adds data to the print writer
-                    printWriter.flush(); //send data in the print writer through socket
-
-                    //Read the server's message
-                    BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
-                    serverMessage = br.readLine();
-
-                    //Then close socket
-                    printWriter.close();
-                    s.close();
+                    //Make request to server
+                    serverMessage = serverRequest(clientMessage);
 
                     //Extract the JSON info from the server message
                     serverJson = new JSONObject(serverMessage);
                     serverResponseType = serverJson.getString("responseType");
                     serverResponseData = serverJson.getString("responseData");
 
-                    //Put the alarm list into the user alarm string, and shared preferences
-                    ThisUserAlarmListString = serverResponseData;
-                    userInfoSharedPreferences = getSharedPreferences(USERINFOPREFERENCES, Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = userInfoSharedPreferences.edit();
-                    editor.putString(USER_ALARM_LIST, ThisUserAlarmListString);
+                    //Put the alarm list into the alarm list variable if there are alarms
+                    if(serverResponseType.equals("alarms present")) {
+                        ThisUserAlarmList = serverResponseData.split(",");
+                    }
+                    else if(serverResponseType.equals("alarms absent"))
+                        ThisUserAlarmList = null;
+                    }
+                    else {
+                        Log.d("debugMessage", "Unrecognized response type");
+                    }
 
-                    //Set text in middle to show user's alarm list
-                    alarmListText = (TextView) findViewById(R.id.alarmListTextView);
-                    alarmListText.setText(ThisUserAlarmListString);
-                }
-
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
             } catch (JSONException e) {
                 e.printStackTrace();
+                Log.d("debugMessage", "JSON exception");
             }
 
             return null;
@@ -226,4 +219,55 @@ public class MainActivity extends AppCompatActivity {
             mAlarmSyncTask = null;
         }
     }
+
+
+    /* Public functions */
+    public static String serverRequest(String requestMessage) {
+
+        String serverResponse;
+
+        try {
+            //Connect to server and send message
+            s = new Socket();
+            s.connect(new InetSocketAddress(MainActivity.serverip, serverPort), 9020);
+            printWriter = new PrintWriter(s.getOutputStream()); //set output stream
+            printWriter.write(requestMessage); //adds data to the print writer
+            printWriter.flush(); //send data in the print writer through socket
+
+            //Read the server's message
+            input = new BufferedReader(new InputStreamReader(s.getInputStream()));
+
+            serverResponse = input.readLine();
+
+            //Then close socket
+            printWriter.close();
+            s.close();
+
+            return serverResponse;
+
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+            Log.d("debugMessage", "Unknown host exception");
+            return "";
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.d("debugMessage", "IO exception");
+            return "";
+        }
+    }
+
+
+    /**
+     * Picks Random alarm from user's alarm list and plays it. Doesn't delete alarm from list
+     */
+    private String pickRandomAlarm() {
+        Random randNum = new Random();
+        int randInt = randNum.nextInt(ThisUserAlarmList.length);
+        String selectedAlarm = ThisUserAlarmList[randInt];
+        return selectedAlarm;
+    }
+
+
+
 }
+

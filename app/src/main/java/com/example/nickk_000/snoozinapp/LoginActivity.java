@@ -366,20 +366,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 clientJson.put("requestData", clientData);
                 clientMessage = clientJson.toString();
 
-                //Connect to server and send message
-                s = new Socket();
-                s.connect(new InetSocketAddress(MainActivity.serverip, serverPort), 9020);
-                printWriter = new PrintWriter(s.getOutputStream()); //set output stream
-                printWriter.write(clientMessage); //adds data to the print writer
-                printWriter.flush(); //send data in the print writer through socket
-
-                //Read the server's message
-                BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
-                serverMessage = br.readLine();
-
-                //Then close socket
-                printWriter.close();
-                s.close();
+                //Make request to server
+                serverMessage = MainActivity.serverRequest(clientMessage);
 
                 //Extract the JSON info from the server message
                 serverJson = new JSONObject(serverMessage);
@@ -398,12 +386,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                     return loginResult.ERROR;
                 }
 
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-                return loginResult.ERROR;
-            } catch (IOException e) {
-                e.printStackTrace();
-                return loginResult.ERROR;
             } catch (JSONException e) {
                 e.printStackTrace();
                 return loginResult.ERROR;
