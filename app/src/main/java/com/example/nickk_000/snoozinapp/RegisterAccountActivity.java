@@ -55,7 +55,6 @@ public class RegisterAccountActivity extends AppCompatActivity {
     private static PrintWriter printWriter;
     String clientMessage = "";
     String serverMessage = "";
-    private static String serverip = "192.168.2.7";
     private static int serverPort = 9020;
 
     //Create enum for username creation attemps
@@ -196,7 +195,7 @@ public class RegisterAccountActivity extends AppCompatActivity {
 
                 //Connect to server and send message
                 s = new Socket();
-                s.connect(new InetSocketAddress(serverip, serverPort), 9020);
+                s.connect(new InetSocketAddress(MainActivity.serverip, serverPort), 9020);
                 printWriter = new PrintWriter(s.getOutputStream()); //set output stream
                 printWriter.write(clientMessage); //adds data to the print writer
                 printWriter.flush(); //send data in the print writer through socket

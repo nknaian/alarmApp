@@ -79,7 +79,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private static PrintWriter printWriter;
     String clientMessage = "";
     String serverMessage = "";
-    private static String serverip = "10.0.0.247";
     private static int serverPort = 9020;
 
     //Create enum for login attempt results
@@ -369,7 +368,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
                 //Connect to server and send message
                 s = new Socket();
-                s.connect(new InetSocketAddress(serverip, serverPort), 9020);
+                s.connect(new InetSocketAddress(MainActivity.serverip, serverPort), 9020);
                 printWriter = new PrintWriter(s.getOutputStream()); //set output stream
                 printWriter.write(clientMessage); //adds data to the print writer
                 printWriter.flush(); //send data in the print writer through socket
