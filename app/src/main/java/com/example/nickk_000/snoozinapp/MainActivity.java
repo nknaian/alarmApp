@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import org.json.JSONException;
@@ -28,7 +29,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
 
     //server global vars
-    public static final String serverip = "192.168.1.6";
+    public static final String serverip = "10.0.0.247";
 
     //Set up shared preferences
     public static final String LOGINPREFERENCES = "LoginPrefs";
@@ -55,8 +56,10 @@ public class MainActivity extends AppCompatActivity {
     //Set up UI variables
     Button logoutButton;
     Button randomAlarmButton;
+    Button alarmSendButton;
     TextView alarmListText;
     TextView helloUserText;
+    EditText alarmSendField;
 
     //Set up TCP stuff
     private static Socket s;
@@ -70,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
 
     //alarm list variables
     private UserAlarmListSync mAlarmSyncTask = null;
+    private AlarmSendTask mAlarmSendTask = null;
 
     enum syncType {
         SERVER_TO_CLIENT_FULL, SERVER_TO_CLIENT_ADD, CLIENT_TO_SERVER_DELETE;
@@ -117,6 +121,9 @@ public class MainActivity extends AppCompatActivity {
         });
         /* END LOGIN/LOGOUT CODE */
 
+
+        /* BEGIN RANDOM ALARM PLAYING CODE */
+
         // Place user info from shared preferences into variables
         userInfoSharedPreferences = getSharedPreferences(USERINFOPREFERENCES, Context.MODE_PRIVATE);
         ThisUserUsername = userInfoSharedPreferences.getString(USER_USERNAME, "");
@@ -150,11 +157,21 @@ public class MainActivity extends AppCompatActivity {
         helloUserText.setText(ThisUserUsername);
 
 
+        /* END RANDOM ALARM PLAYING CODE */
+
+        alarmSendField = (EditText) findViewById(R.id.alarmSendBox);
+        alarmSendButton = (Button) findViewById(R.id.sendButton);
+        alarmSendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mAlarmSendTask = new AlarmSendTask(alarmSendField.getText().toString());
+                mAlarmSendTask.execute((Void) null);
+            }
+        });
     }
 
     /**
-     * Represents an asynchronous login/registration task used to authenticate
-     * the user.
+     * Represents an asynchronous task to sync the server's alarm list and local copy of alarms
      */
     public class UserAlarmListSync extends AsyncTask<Void, Void, Void> {
 
@@ -220,6 +237,63 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Represents an asynchronous task to send an alarm to another user
+     */
+    public class AlarmSendTask extends AsyncTask<Void, Void, Void> {
+
+        private String mTargetUser;
+        private String mUrl;
+
+        AlarmSendTask(String fieldValue) {
+            String componentHolder[] = fieldValue.split(":");
+            mTargetUser = componentHolder[0];
+            mUrl = componentHolder[1];
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+
+            try {
+
+                //Create JSON objects and strings to use in the request
+                JSONObject clientJson = new JSONObject();
+                JSONObject clientData = new JSONObject();
+                JSONObject serverJson;
+                String serverResponseData;
+                String serverResponseType;
+
+                //Create json request to send to server
+                clientJson.put("requestType", "alarm_send");
+                clientData.put("targetUser", mTargetUser);
+                clientData.put("url", mUrl);
+                clientJson.put("requestData", clientData);
+                clientMessage = clientJson.toString();
+
+                //Make request to server
+                serverMessage = serverRequest(clientMessage);
+
+                //Extract the JSON info from the server message
+                serverJson = new JSONObject(serverMessage);
+                serverResponseType = serverJson.getString("responseType");
+                serverResponseData = serverJson.getString("responseData");
+
+                //TODO: should have server respond with something
+
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+                Log.d("debugMessage", "JSON exception");
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onCancelled() {
+            mAlarmSendTask = null;
+        }
+    }
 
     /* Public functions */
     public static String serverRequest(String requestMessage) {

@@ -48,5 +48,28 @@
         android:layout_centerVertical="true"
         android:text="Random Alarm" />
 
+    <android.support.design.widget.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignStart="@+id/staticHello"
+        android:layout_marginBottom="65dp">
+
+        <android.support.design.widget.TextInputEditText
+            android:id="@+id/alarmSendBox"
+            android:layout_width="321dp"
+            android:layout_height="wrap_content"
+            android:hint="username:url" />
+    </android.support.design.widget.TextInputLayout>
+
+    <Button
+        android:id="@+id/sendButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="10dp"
+        android:text="Send alarm" />
+
 
 </RelativeLayout>
